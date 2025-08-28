@@ -1,128 +1,133 @@
-﻿@page "/Account/Login"
+﻿@page "/login"
+@namespace BlazorApp1.Pages
+@inject NavigationManager Navigation
+<PageTitle>Login</PageTitle>
 
-@using System.ComponentModel.DataAnnotations
-@using Microsoft.AspNetCore.Authentication
-@using Microsoft.AspNetCore.Identity
-@using Error404_Parkiando.Data
+<div class="login-container">
+    <div class="login-card">
+        <h2>🚗 Error404-Parkiando</h2>
+        <p>Accede a tu cuenta</p>
 
-@inject SignInManager<ApplicationUser> SignInManager
-@inject ILogger<Login> Logger
-@inject NavigationManager NavigationManager
-@inject IdentityRedirectManager RedirectManager
+        <EditForm Model="loginModel" OnValidSubmit="HandleLogin">
+            <div class="form-group">
+                <label for="username">Usuario</label>
+                <InputText id="username" class="form-control" @bind-Value="loginModel.Username" required />
+            </div>
 
-<PageTitle>Log in</PageTitle>
+            <div class="form-group">
+                <label for="password">Contraseña</label>
+                <InputText id="password" type="password" class="form-control" @bind-Value="loginModel.Password" required />
+            </div>
 
-<h1>Log in</h1>
-<div class="row">
-    <div class="col-md-4">
-        <section>
-            <StatusMessage Message="@errorMessage" />
-            <EditForm Model="Input" method="post" OnValidSubmit="LoginUser" FormName="login">
-                <DataAnnotationsValidator />
-                <h2>Use a local account to log in.</h2>
-                <hr />
-                <ValidationSummary class="text-danger" role="alert" />
-                <div class="form-floating mb-3">
-                    <InputText @bind-Value="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
-                    <label for="email" class="form-label">Email</label>
-                    <ValidationMessage For="() => Input.Email" class="text-danger" />
-                </div>
-                <div class="form-floating mb-3">
-                    <InputText type="password" @bind-Value="Input.Password" class="form-control" autocomplete="current-password" aria-required="true" placeholder="password" />
-                    <label for="password" class="form-label">Password</label>
-                    <ValidationMessage For="() => Input.Password" class="text-danger" />
-                </div>
-                <div class="checkbox mb-3">
-                    <label class="form-label">
-                        <InputCheckbox @bind-Value="Input.RememberMe" class="darker-border-checkbox form-check-input" />
-                        Remember me
-                    </label>
-                </div>
-                <div>
-                    <button type="submit" class="w-100 btn btn-lg btn-primary">Log in</button>
-                </div>
-                <div>
-                    <p>
-                        <a href="Account/ForgotPassword">Forgot your password?</a>
-                    </p>
-                    <p>
-                        <a href="@(NavigationManager.GetUriWithQueryParameters("Account/Register", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl }))">Register as a new user</a>
-                    </p>
-                    <p>
-                        <a href="Account/ResendEmailConfirmation">Resend email confirmation</a>
-                    </p>
-                </div>
-            </EditForm>
-        </section>
-    </div>
-    <div class="col-md-6 col-md-offset-2">
-        <section>
-            <h3>Use another service to log in.</h3>
-            <hr />
-            <ExternalLoginPicker />
-        </section>
+            <button type="submit" class="btn-login">Ingresar</button>
+            <button type="button" class="btn-register" @onclick="GoToRegister">Registrarse</button>
+
+            <div class="forgot">
+                <a href="#">¿Olvidaste tu contraseña?</a>
+            </div>
+        </EditForm>
+
+        @if (!string.IsNullOrEmpty(loginMessage))
+        {
+            <p style="color:red; margin-top:10px">@loginMessage</p>
+        }
     </div>
 </div>
 
-@code {
-    private string? errorMessage;
-
-    [CascadingParameter]
-    private HttpContext HttpContext { get; set; } = default!;
-
-    [SupplyParameterFromForm]
-    private InputModel Input { get; set; } = new();
-
-    [SupplyParameterFromQuery]
-    private string? ReturnUrl { get; set; }
-
-    protected override async Task OnInitializedAsync()
-    {
-        if (HttpMethods.IsGet(HttpContext.Request.Method))
-        {
-            // Clear the existing external cookie to ensure a clean login process
-            await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
-        }
+<style>
+    .login-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background: linear-gradient(135deg, #2a5298, #1e3c72);
+        font-family: Arial, sans-serif;
     }
 
-    public async Task LoginUser()
+    .login-card {
+        background: white;
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        width: 340px;
+        text-align: center;
+    }
+
+    .form-group {
+        margin-bottom: 1rem;
+        text-align: left;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+    }
+
+    .btn-login {
+        width: 100%;
+        padding: 0.6rem;
+        font-size: 1rem;
+        background: #1e3c72;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        margin-top: 0.5rem;
+    }
+
+        .btn-login:hover {
+            background: #2a5298;
+        }
+
+    .btn-register {
+        width: 100%;
+        padding: 0.6rem;
+        font-size: 1rem;
+        background: #4CAF50;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        margin-top: 0.5rem;
+    }
+
+        .btn-register:hover {
+            background: #45a049;
+        }
+
+    .forgot {
+        margin-top: 1rem;
+        text-align: center;
+    }
+</style>
+
+@code {
+    private LoginModel loginModel = new();
+    private string? loginMessage;
+
+    private void HandleLogin()
     {
-        // This doesn't count login failures towards account lockout
-        // To enable password failures to trigger account lockout, set lockoutOnFailure: true
-        var result = await SignInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: false);
-        if (result.Succeeded)
+        // Simulación de validación (puedes cambiar usuario/contraseña "demo")
+        if (loginModel.Username == "demo" && loginModel.Password == "1234")
         {
-            Logger.LogInformation("User logged in.");
-            RedirectManager.RedirectTo(ReturnUrl);
-        }
-        else if (result.RequiresTwoFactor)
-        {
-            RedirectManager.RedirectTo(
-                "Account/LoginWith2fa",
-                new() { ["returnUrl"] = ReturnUrl, ["rememberMe"] = Input.RememberMe });
-        }
-        else if (result.IsLockedOut)
-        {
-            Logger.LogWarning("User account locked out.");
-            RedirectManager.RedirectTo("Account/Lockout");
+            loginMessage = $"Bienvenido, {loginModel.Username} 🎉";
         }
         else
         {
-            errorMessage = "Error: Invalid login attempt.";
+            loginMessage = "Usuario o contraseña incorrectos ❌";
         }
     }
 
-    private sealed class InputModel
+    private void GoToRegister()
     {
-        [Required]
-        [EmailAddress]
-        public string Email { get; set; } = "";
+        Navigation.NavigateTo("/register");
+    }
 
-        [Required]
-        [DataType(DataType.Password)]
-        public string Password { get; set; } = "";
-
-        [Display(Name = "Remember me?")]
-        public bool RememberMe { get; set; }
+    public class LoginModel
+    {
+        public string Username { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
     }
 }
